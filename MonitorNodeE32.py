@@ -49,10 +49,16 @@ while True:
         node = 'node_' + message.get('node')
         field = 'temp'
         value = message.get('temp')
-        influx.makeDataStringNodeFieldValue(node, field, value)  # temperature
+        if value is not None:
+            influx.makeDataStringNodeFieldValue(node, field, value)  # temperature
         field = 'hum'
         value = message.get('hum')
-        influx.makeDataStringNodeFieldValue(node, field, value)  # humidity
+        if value is not None:
+            influx.makeDataStringNodeFieldValue(node, field, value)  # humidity
+        field = 'pres'
+        value = message.get('pres')
+        if value is not None:
+            influx.makeDataStringNodeFieldValue(node, field, value)  # pressure
         # write sensor data to influxdb
         influx.writeToInfluxdb()
     # wait for next check
