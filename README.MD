@@ -31,7 +31,6 @@ No|Pin|Description
 3|RXD*|TTL UART input. Can be configured as open-drain or pull-up input.
 4|TXD*|TTL UART output. Can be configured as open-drain or push-pull output.
 5|AUX*|Indicates module’s working status. Can be configured as open-drain output orpush-pull output (floating is allowed).
-6|VCC|Power (2.3~5.5V DC) 	
 7|GND|Ground.
 
 __(*) All communication pins are 3.3V only !!!__
@@ -258,11 +257,12 @@ transparent|[code](testSendE32_Transparent.py)|[code](testRecvE32_Transparent.py
 ## Proof of Concept
 
 To validate the proper working of the ebyteE32 micropython class this simple sensor measuring scenario has been implemented :
-1. __Sensor node(s)__ ([code](SensorNodeE32_01.py))
+1. __Sensor nodes__ 
     - each sensor node contains an ESP32 microcontroller, an Ebyte E32 LoRa module, a sensor and a 3.3V power supply with integrated 18650 Li-ion battery.
     - the node wakes up every 5 minutes, takes a sensor reading and transmits it with the E32 LoRa module. Then it goes to deepsleep to extend the battery life.
     - all sensor nodes transmit on the same LoRa channel, but can have different addresses.
-    - sensor node 01 has a DHT11 temperature and humidity sensor.
+    - sensor node 01 has a DHT11 temperature and humidity sensor ([code](SensorNodeE32_01.py))
+    - sensor node 02 has a BMP180 temperature and pressure sensor ([code](SensorNodeE32_02.py))
     ![E32-868T20D](images/E32_sensor_node_01.jpg)
 
 1. __Monitor node__ ([code](MonitorNodeE32.py))
@@ -271,13 +271,43 @@ To validate the proper working of the ebyteE32 micropython class this simple sen
     - the incoming sensor data is stored in a Influxdb database table. The sensor data from each sensor node is stored in it's own database table.
     - the Influxdb database runs on a PC on the local network; the monitor node updates the database via a WiFi connection to the same local network.
     ![E32-868T20D](images/E32_monitor_node.jpg)
+    
+    ```
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'pres': '101860', 'temp': '25', 'node': '02'}
+    204
+    ..................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'hum': '21', 'temp': '24', 'node': '01'}
+    204
+    ..............................................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'pres': '101852', 'temp': '25', 'node': '02'}
+    204
+    ..................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'hum': '20', 'temp': '25', 'node': '01'}
+    204
+    ..............................................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'pres': '101850', 'temp': '25', 'node': '02'}
+    204
+    ..................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'hum': '20', 'temp': '25', 'node': '01'}
+    204
+    ..............................................
+    Receiving fixed monitor : 
+    address 1 - channel 2 - message {'pres': '101853', 'temp': '25', 'node': '02'}
+    204
+    ```
 
 1. __Influxdb server__
     - the Influxdb database server runs on a Linux Mint 19 PC on the local network.
     - __dbhost__ : IP address of Linux PC 
     - __database__ : serre_frank
-    - __table__ : node_01 (each sensor node has it's own table)
     - __fields__ : time - field - value
+    - __table__ : node_01 (DHT11)
     ```
         > select * from node_01
         name: node_01
@@ -293,6 +323,22 @@ To validate the proper working of the ebyteE32 micropython class this simple sen
         1586951939053618579	    hum	        12
         1586951939053618579	    temp	41
     ```
+    - __table__ : node_02 (BMP180)
+    ```
+        > select * from node_02
+        name: node_02
+        time		    field	value
+        ----		    -----	-----
+        1588858703347986765     pres	101987
+        1588858703347986765	    temp	26
+        1588858809623716125	    pres	101992
+        1588858809623716125	    temp	26
+        ...
+        1588871763234526547	    pres	101853
+        1588871763234526547	    temp	25
+        1588872076830457467	    pres	101854
+        1588872076830457467	    temp	25
+    ```
 
 1. __Grafana server__
     - the sensor data from the Influxdb table(s) is visualised on a Grafana dashboard. The Grafana server is running on the same Linux Mint 19 PC on the local network.
@@ -302,4 +348,6 @@ To validate the proper working of the ebyteE32 micropython class this simple sen
     ![E32-868T20D](images/Grafana_graph1.jpg)
     - __panel 2__ : Humidity\
     ![E32-868T20D](images/Grafana_graph2.jpg)
+    - __panel 3__ : Pressure\
+    ![E32-868T20D](images/Grafana_graph3.jpg)
 
