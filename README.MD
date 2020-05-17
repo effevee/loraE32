@@ -31,6 +31,7 @@ No|Pin|Description
 3|RXD*|TTL UART input. Can be configured as open-drain or pull-up input.
 4|TXD*|TTL UART output. Can be configured as open-drain or push-pull output.
 5|AUX*|Indicates module’s working status. Can be configured as open-drain output orpush-pull output (floating is allowed).
+6|VCC|Power supply 2.3-5.2V DC
 7|GND|Ground.
 
 __(*) All communication pins are 3.3V only !!!__
