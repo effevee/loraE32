@@ -250,10 +250,10 @@ def setOperationMode(self, mode):
 
 Transmission mode|Transmitter|Receiver
 :---:|:----:|:----:
-transparent|[code](testSendE32_Transparent.py)|[code](testRecvE32_Transparent.py)
-|fixed P2P|[code](testSendE32_P2P.py)|[code](testRecvE32_P2P.py)
-|fixed broadcast|[code](testSendE32_Broadcast.py)|[code](testRecvE32_Broadcast.py)
-|fixed monitor|[code](testSendE32_Monitor.py)|[code](testRecvE32_Monitor.py)
+transparent|[code](examples/testSendE32_Transparent.py)|[code](examples/testRecvE32_Transparent.py)
+|fixed P2P|[code](examples/testSendE32_P2P.py)|[code](examples/testRecvE32_P2P.py)
+|fixed broadcast|[code](examples/testSendE32_Broadcast.py)|[code](examples/testRecvE32_Broadcast.py)
+|fixed monitor|[code](examples/testSendE32_Monitor.py)|[code](examples/testRecvE32_Monitor.py)
 
 ## Proof of Concept
 
@@ -262,11 +262,11 @@ To validate the proper working of the ebyteE32 micropython class this simple sen
     - each sensor node contains an ESP32 microcontroller, an Ebyte E32 LoRa module, a sensor and a 3.3V power supply with integrated 18650 Li-ion battery.
     - the node wakes up every 5 minutes, takes a sensor reading and transmits it with the E32 LoRa module. Then it goes to deepsleep to extend the battery life.
     - all sensor nodes transmit on the same LoRa channel, but can have different addresses.
-    - sensor node 01 has a DHT11 temperature and humidity sensor ([code](SensorNodeE32_01.py))
-    - sensor node 02 has a BMP180 temperature and pressure sensor ([code](SensorNodeE32_02.py))
+    - sensor node 01 has a DHT11 temperature and humidity sensor ([code](examples/POC/SensorNodeE32_01.py))
+    - sensor node 02 has a BMP180 temperature and pressure sensor ([code](examples/POC/SensorNodeE32_02.py))
     ![E32-868T20D](images/E32_sensor_node_01.jpg)
 
-1. __Monitor node__ ([code](MonitorNodeE32.py))
+1. __Monitor node__ ([code](examples/POC/MonitorNodeE32.py))
     - this node contains an ESP32 microcontroller and an Ebyte E32 LoRa module. It is powered 24/7 with a 5V USB supply.
     - the E32 LoRa module is configured as a fixed monitor device (address 0xFFFF) and receives all transmissions from sensor node(s) with the same channel.
     - the incoming sensor data is stored in a Influxdb database table. The sensor data from each sensor node is stored in it's own database table.
