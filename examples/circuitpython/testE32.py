@@ -1,7 +1,7 @@
 # coding=utf-8
 
 import board
-from loraE32 import ebyteE32
+from loraE32CP import ebyteE32
 
 
 M0pin = board.D2
