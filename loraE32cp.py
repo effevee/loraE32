@@ -66,7 +66,29 @@ import time
 
 
 class ebyteE32:
-    ''' class to interface an ESP32 via serial commands to the EBYTE E32 Series LoRa modules '''
+    """
+    Class to interface an ESP32 via serial commands to the EBYTE E32 Series LoRa modules
+
+    Attributes:
+        PORT (dict): dictionary with UART ports
+        PARSTR (dict): dictionary with UART parity strings
+        PARINV (dict): dictionary with UART parity inverted
+        PARBIT (dict): dictionary with UART parity bits
+        BAUDRATE (dict): dictionary with UART baudrates
+        BAUDRATEINV (dict): dictionary with UART baudrates inverted
+        DATARATE (dict): dictionary with LoRa datarates
+        DATARATEINV (dict): dictionary with LoRa datarates inverted
+        CMDS (dict): dictionary with commands
+        OPERMODE (dict): dictionary with operating modes (set with M0 & M1)
+        FREQ (dict): dictionary with model frequencies ranges (MHz)
+        FREQV (dict): dictionary with version info frequencies
+        MAXPOWER (dict): dictionary with model maximum transmission power (mW)
+        TRANSMODE (dict): dictionary with transmission modes
+        IOMODE (dict): dictionary with I/O drive mode
+        WUTIME (dict): dictionary with wireless wakeup times from sleep mode
+        FEC (dict): dictionary with Forward Error Correction (FEC) mode
+        TXPOWER (dict): dictionary with transmission power T20/T27/T30 (dBm)
+    """
 
     # UART ports
     PORT = {'U': [board.TX, board.RX], 'U1': [board.TX1, board.RX1], 'U2': [board.TX2, board.RX2],
@@ -97,7 +119,7 @@ class ebyteE32:
             868: [862, 868, 893], 915: [900, 915, 931]}
     # version info frequency
     FREQV = {'0x32': 433, '0x38': 470, '0x45': 868, '0x44': 915, '0x46': 170}
-    # model maximum transmision power
+    # model maximum transmission power
     # 20dBm = 100mW - 27dBm = 500 mW - 30dBm = 1000 mW (1 W)
     MAXPOW = {'T20': 0, 'T27': 1, 'T30': 2}
     # transmission mode
@@ -118,16 +140,48 @@ class ebyteE32:
 
     def __init__(self, PinM0, PinM1, PinAUX, Model='868T20D', Port='U1', Baudrate=9600, Parity='8N1',
                  AirDataRate='2.4k', Address=0x0000, Channel=0x06, debug=False):
-        ''' constructor for ebyte E32 LoRa module '''
+        """
+        constructor for ebyte E32 LoRa module
+
+        Example:
+            >>> import board
+            >>> import ebyteE32
+            >>> M0pin = board.D2
+            >>> M1pin = board.D3
+            >>> AUXpin = board.D4
+            >>> e32 = ebyteE32(board.D2, board.D3, board.D4, Port='U2', Address=0x0001, Channel=0x04)
+            >>> e32.start()
+            'OK'
+            >>> e32.stop()
+            'OK'
+
+        Args:
+            PinM0 (Pin): pin identifier for M0
+            PinM1 (Pin): pin identifier for M1
+            PinAUX (Pin): pin identifier for AUX
+            Model (str): model of the module (default: '868T20D')
+            Port (str): UART port identifier (default: 'U1')
+            Baudrate (int): UART baudrate (default: 9600)
+            Parity (str): UART parity (default: '8N1')
+            AirDataRate (str): LoRa air data rate (default: '2.4k')
+            Address (int): LoRa address (default: 0x0000)
+            Channel (int): LoRa channel (default: 0x06)
+            debug (bool): debug mode (default: False)
+
+        Raises:
+            E (Error): if error on sendMessage
+            E (Error): if error on recvMessage
+            E (Error): if error on reset
+            E (Error): if error on stop UART
+            E (Error): if error on sendCommand
+            E (Error): if error on getVersion
+            E (Error): if error on getConfig
+            E (Error): if error on setConfig
+
+        """
         # configuration in dictionary
-        self.config = {}
-        self.config['model'] = Model  # E32 model (default 868T20D)
-        self.config['port'] = Port  # UART channel on the ESP (default U1)
-        self.config['baudrate'] = Baudrate  # UART baudrate (default 9600)
-        self.config['parity'] = Parity  # UART Parity (default 8N1)
-        self.config['datarate'] = AirDataRate  # wireless baudrate (default 2.4k)
-        self.config['address'] = Address  # target address (default 0x0000)
-        self.config['channel'] = Channel  # target channel (0-31, default 0x06)
+        self.config = {'model': Model, 'port': Port, 'baudrate': Baudrate, 'parity': Parity, 'datarate': AirDataRate,
+                       'address': Address, 'channel': Channel}
         self.calcFrequency()  # calculate frequency (min frequency + channel*1 MHz)
         self.config['transmode'] = 0  # transmission mode (default 0 - tranparent)
         self.config['iomode'] = 1  # IO mode (default 1 = not floating)
@@ -145,7 +199,12 @@ class ebyteE32:
         self.debug = debug
 
     def start(self):
-        ''' Start the ebyte E32 LoRa module '''
+        """
+        Start the ebyte E32 LoRa module
+
+        Raises:
+            E (Error): if error on start UART
+        """
         try:
             # check parameters
             if int(self.config['model'].split('T')[0]) not in ebyteE32.FREQ:
@@ -188,12 +247,31 @@ class ebyteE32:
             return "NOK"
 
     def sendMessage(self, to_address, to_channel, payload, useChecksum=False):
-        ''' Send the payload to ebyte E32 LoRa modules in transparent or fixed mode. The payload is a data dictionary to
-            accomodate key value pairs commonly used to store sensor data and is converted to a JSON string before sending.
-            The payload can be appended with a 2's complement checksum to validate correct transmission.
-            - transparent mode : all modules with the same address and channel of the transmitter will receive the payload
-            - fixed mode : only the module with this address and channel will receive the payload;
-                           if the address is 0xFFFF all modules with the same channel will receive the payload'''
+        """
+        Send the payload to ebyte E32 LoRa modules in transparent or fixed mode. The payload is a data dictionary to
+        accomodate key value pairs commonly used to store sensor data and is converted to a JSON string before sending.
+        The payload can be appended with a 2's complement checksum to validate correct transmission.
+
+        - transparent mode : all modules with the same address and channel of the transmitter will receive the payload
+        - fixed mode : only the module with this address and channel will receive the payload;
+                       if the address is 0xFFFF all modules with the same channel will receive the payload
+
+        Example:
+            >>> sendMessage(0x0000, 0x06, {'temperature': 25.5, 'humidity': 60.0}, True)
+            'OK'
+
+        Args:
+            to_address (int): target address (0x0000 - 0xFFFF)
+            to_channel (int): target channel (0x00 - 0x1F)
+            payload (dict): data dictionary to send
+            useChecksum (bool): use 2's complement checksum (default: False)
+
+        Returns:
+            str: 'OK' if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on sendMessage
+        """
         try:
             # type of transmission
             if (to_address == self.config['address']) and (to_channel == self.config['channel']):
@@ -236,12 +314,29 @@ class ebyteE32:
             return "NOK"
 
     def recvMessage(self, from_address, from_channel, useChecksum=False):
-        ''' Receive payload messages from ebyte E32 LoRa modules in transparent or fixed mode. The payload is a JSON string
-            of a data dictionary to accomodate key value pairs commonly used to store sensor data. If checksumming is used, the
-            checksum of the received payload including the checksum byte should result in 0 for a correct transmission.
-            - transparent mode : payload will be received if the module has the same address and channel of the transmitter
-            - fixed mode : only payloads from transmitters with this address and channel will be received;
-                           if the address is 0xFFFF, payloads from all transmitters with this channel will be received'''
+        """
+        Receive payload messages from ebyte E32 LoRa modules in transparent or fixed mode. The payload is a JSON string
+        of a data dictionary to accomodate key value pairs commonly used to store sensor data. If checksumming is used, the
+        checksum of the received payload including the checksum byte should result in 0 for a correct transmission.
+        - transparent mode : payload will be received if the module has the same address and channel of the transmitter
+        - fixed mode : only payloads from transmitters with this address and channel will be received;
+                       if the address is 0xFFFF, payloads from all transmitters with this channel will be received
+
+        Example:
+            >>> recvMessage(0x0000, 0x06, True)
+            {'temperature': 25.5, 'humidity': 60.0}
+
+        Args:
+            from_address (int): source address (0x0000 - 0xFFFF)
+            from_channel (int): source channel (0x00 - 0x1F)
+            useChecksum (bool): use 2's complement checksum (default: False)
+
+        Returns:
+            dict: data dictionary with payload data if success, None if error
+
+        Raises:
+            E (Error): if error on recvMessage
+        """
         try:
             # type of transmission
             if (from_address == self.config['address']) and (from_channel == self.config['channel']):
@@ -287,12 +382,36 @@ class ebyteE32:
             return "NOK"
 
     def calcChecksum(self, payload):
-        ''' Calculates checksum for sending/receiving payloads. Sums the ASCII character values mod256 and returns
-            the lower byte of the two's complement of that value in hex notation. '''
+        """
+        Calculates checksum for sending/receiving payloads. Sums the ASCII character values mod256 and returns
+        the lower byte of the two's complement of that value in hex notation.
+
+        Example:
+            >>> calcChecksum('{"temperature":25.5,"humidity":60.0}')
+            '37'
+
+        Args:
+            payload (str): payload to calculate checksum for
+
+        Returns:
+            str: checksum in hex notation
+        """
         return '%2X' % (-(sum(ord(c) for c in payload) % 256) & 0xFF)
 
     def reset(self):
-        ''' Reset the ebyte E32 Lora module '''
+        """
+        Reset the ebyte E32 Lora module
+
+        Example:
+            >>> reset()
+            'OK'
+
+        Returns:
+            str: 'OK' if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on reset
+        """
         try:
             # send the command
             res = self.sendCommand('reset')
@@ -305,7 +424,19 @@ class ebyteE32:
             return "NOK"
 
     def stop(self):
-        ''' Stop the ebyte E32 LoRa module '''
+        """
+        Stop the ebyte E32 LoRa module
+
+        Example:
+            >>> stop()
+            'OK'
+
+        Returns:
+            str: 'OK' if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on stop
+        """
         try:
             if self.serdev != None:
                 self.serdev.deinit()
@@ -318,8 +449,23 @@ class ebyteE32:
             return "NOK"
 
     def sendCommand(self, command):
-        ''' Send a command to the ebyte E32 LoRa module.
-            The module has to be in sleep mode '''
+        """
+        Send a command to the ebyte E32 LoRa module.
+        The module has to be in sleep mode
+
+        Example:
+            >>> sendCommand('reset')
+            'OK'
+
+        Args:
+            command (str): command to send
+
+        Returns:
+            str: 'OK' if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on sendCommand
+        """
         try:
             # put into sleep mode
             self.setOperationMode('sleep')
@@ -354,7 +500,23 @@ class ebyteE32:
             return "NOK"
 
     def getVersion(self):
-        ''' Get the version info from the ebyte E32 LoRa module '''
+        """
+        Get the version info from the ebyte E32 LoRa module
+
+        Example:
+            >>> getVersion()
+            ================= E32 MODULE ===================
+            model       	433Mhz
+            version     	16
+            features    	30
+            ================================================
+
+        Returns:
+            str: version info if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on getVersion
+        """
         try:
             # send the command
             result = self.sendCommand('getVersion')
@@ -378,7 +540,33 @@ class ebyteE32:
             return "NOK"
 
     def getConfig(self):
-        ''' Get config parameters from the ebyte E32 LoRa module '''
+        """
+        Get config parameters from the ebyte E32 LoRa module
+
+        Example:
+            >>> getConfig()
+            =================== CONFIG =====================
+            model       	E32-868T20D
+            frequency   	866Mhz
+            address     	0x0001
+            channel     	0x04
+            datarate    	2.4kbps
+            port        	U2
+            baudrate    	9600bps
+            parity      	8N1
+            transmission	transparent
+            IO mode     	TXD AUX push-pull output, RXD pull-up input
+            wakeup time 	250ms
+            FEC         	on
+            TX power    	20dBm
+            ================================================
+
+        Returns:
+            str: config parameters if success, 'NOK' if error
+
+        Raises:
+            E (Error): if error on getConfig
+        """
         try:
             # send the command
             result = self.sendCommand('getConfig')
@@ -397,7 +585,18 @@ class ebyteE32:
             return "NOK"
 
     def decodeConfig(self, message):
-        ''' decode the config message from the ebyte E32 LoRa module to update the config dictionary '''
+        """
+        decode the config message from the ebyte E32 LoRa module to update the config dictionary
+
+        Example:
+            >>> decodeConfig([0xC0, 0x00, 0x00, 0x00, 0x00, 0x00])
+
+        Args:
+            message (list): config message to decode
+
+        Returns:
+            None
+        """
         # message byte 0 = header
         header = int(message[0])
         # message byte 1 & 2 = address
@@ -418,7 +617,16 @@ class ebyteE32:
         self.config['txpower'] = int(bits[6:])
 
     def encodeConfig(self):
-        ''' encode the config dictionary to create the config message of the ebyte E32 LoRa module '''
+        """
+        encode the config dictionary to create the config message of the ebyte E32 LoRa module
+
+        Example:
+            >>> encodeConfig()
+            [192, 0, 1, 26, 4, 68]
+
+        Returns:
+            list: config message if success, 'NOK' if error
+        """
         # Initialize config message
         message = []
         # message byte 0 = header
@@ -446,7 +654,30 @@ class ebyteE32:
         return message
 
     def showConfig(self):
-        ''' Show the config parameters of the ebyte E32 LoRa module on the shell '''
+        """
+        Show the config parameters of the ebyte E32 LoRa module on the shell
+
+        Example:
+            >>> showConfig()
+            =================== CONFIG =====================
+            model       	E32-868T20D
+            frequency   	866Mhz
+            address     	0x0001
+            channel     	0x04
+            datarate    	2.4kbps
+            port        	U2
+            baudrate    	9600bps
+            parity      	8N1
+            transmission	transparent
+            IO mode     	TXD AUX push-pull output, RXD pull-up input
+            wakeup time 	250ms
+            FEC         	on
+            TX power    	20dBm
+            ================================================
+
+        Returns:
+            str: with the config parameters
+        """
         print('=================== CONFIG =====================')
         print('model       \tE32-%s' % (self.config['model']))
         print('frequency   \t%dMhz' % (self.config['frequency']))
@@ -465,7 +696,15 @@ class ebyteE32:
         print('================================================')
 
     def waitForDeviceIdle(self):
-        ''' Wait for the E32 LoRa module to become idle (AUX pin high) '''
+        """
+        Wait for the E32 LoRa module to become idle (AUX pin high)
+
+        Example:
+            >>> waitForDeviceIdle()
+
+        Returns:
+            None
+        """
         count = 0
         # loop for device busy
         while not self.AUX.value():
@@ -478,18 +717,43 @@ class ebyteE32:
             time.sleep(0.01)
 
     def saveConfigToJson(self):
-        ''' Save config dictionary to JSON file '''
+        """
+        Save config dictionary to JSON file
+
+        Example:
+            >>> saveConfigToJson()
+
+        Returns:
+            None
+        """
         with open('/E32config.json', 'w') as outfile:
             json.dump(self.config, outfile)
 
     def loadConfigFromJson(self):
-        ''' Load config dictionary from JSON file '''
+        """
+        Load config dictionary from JSON file
+
+        Example:
+            >>> loadConfigFromJson()
+            {'parity': '8N1', 'datarate': '2.4k', 'model': '868T20D', 'channel': 4, 'transmode': 0, 'port': 'U2', 'frequency': 866, 'baudrate': 9600, 'txpower': 0, 'iomode': 1, 'wutime': 0, 'address': 1, 'fec': 1}
+
+        Returns:
+            dict: config dictionary
+        """
         with open('E32config.json', 'r') as infile:
             result = json.load(infile)
         print(self.config)
 
     def calcFrequency(self):
-        ''' Calculate the frequency (= minimum frequency + channel * 1MHz)'''
+        """
+        Calculate the frequency (= minimum frequency + channel * 1MHz)
+
+        Example:
+            >>> calcFrequency()
+
+        Returns:
+            None
+        """
         # get minimum and maximum frequency
         freqkey = int(self.config['model'].split('T')[0])
         minfreq = ebyteE32.FREQ.get(freqkey)[0]
@@ -503,13 +767,36 @@ class ebyteE32:
             self.config['frequency'] = freq
 
     def setTransmissionMode(self, transmode):
-        ''' Set the transmission mode of the E32 LoRa module '''
+        """
+        Set the transmission mode of the E32 LoRa module
+
+        Example:
+            >>> setTransmissionMode(0)
+
+        Args:
+            transmode (int): 0 = transparent, 1 = fixed length
+
+        Returns:
+            None
+        """
         if transmode != self.config['transmode']:
             self.config['transmode'] = transmode
             self.setConfig('setConfigPwrDwnSave')
 
     def setConfig(self, save_cmd):
-        ''' Set config parameters for the ebyte E32 LoRa module '''
+        """
+        Set config parameters for the ebyte E32 LoRa module
+
+        Example:
+            >>> setConfig('setConfigPwrDwnSave')
+            'OK'
+
+        Args:
+            save_cmd (str): 'setConfigPwrDwnSave' or 'setConfig'
+
+        Returns:
+            str: 'OK' if success, 'NOK' if error
+        """
         try:
             # send the command
             result = self.sendCommand(save_cmd)
@@ -532,7 +819,15 @@ class ebyteE32:
             return "NOK"
 
     def setOperationMode(self, mode):
-        ''' Set operation mode of the E32 LoRa module '''
+        """
+        Set operation mode of the E32 LoRa module
+
+       Example:
+            >>> setOperationMode('normal')
+
+        Args:
+            mode (str): 'normal', 'wakeup', 'powerdown', 'sleep'
+        """
         # get operation mode settings (default normal)
         bits = ebyteE32.OPERMODE.get(mode, '00')
         # set operation mode
