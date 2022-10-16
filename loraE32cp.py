@@ -1,62 +1,4 @@
-#######################################################################
-# circuitpython class for EBYTE E32 Series LoRa modules which are based
-# on SEMTECH SX1276/SX1278 chipsets and are available for 170, 433, 470,
-# 868 and 915MHz frequencies in 100mW and 1W transmitting power versions.
-# They all use a simple UART interface to control the device.
-#
-# Pin layout E32-868T20D (SX1276 868MHz 100mW DIP Wireless Module)
-# ======================
-# +---------------------------------------------+
-# | 0 - M0  (set mode)        [*]               |
-# | 0 - M1  (set mode)        [*]               |
-# | 0 - RXD (TTL UART input)  [*]               |
-# | 0 - TXD (TTL UART output) [*]               |
-# | 0 - AUX (device status)   [*]               |
-# | 0 - VCC (3.3-5.2V)                          +---+
-# | 0 - GND (GND)                                SMA| Antenna
-# +-------------------------------------------------+
-#     [*] ALL COMMUNICATION PINS ARE 3.3V !!!
-#
-# Transmission modes :
-# ==================
-#   - Transparent : all modules have the same address and channel and
-#        can send/receive messages to/from each other. No address and
-#        channel is included in the message.
-#
-#   - Fixed : all modules can have different addresses and channels.
-#        The transmission messages are prefixed with the destination address
-#        and channel information. If these differ from the settings of the
-#        transmitter, then the configuration of the module will be changed
-#        before the transmission. After the transmission is complete,
-#        the transmitter will revert to its prior configuration.
-#
-#        1. Fixed P2P : The transmitted message has the address and channel
-#           information of the receiver. Only this module will receive the message.
-#           This is a point to point transmission between 2 modules.
-#
-#        2. Fixed Broadcast : The transmitted message has address FFFF and a
-#           channel. All modules with any address and the same channel of
-#           the message will receive it.
-#
-#        3. Fixed Monitor : The receiver has adress FFFF and a channel.
-#           It will receive messages from all modules with any address and
-#           the same channel as the receiver.
-#
-# Operating modes :
-# ===============
-#   - 0=Normal (M0=0,M1=0) : UART and LoRa radio are on.
-#
-#   - 1=wake up (M0=1,M1=0) : Same as normal but preamble code is added to
-#             transmitted data to wake up the receiver.
-#
-#   - 2=power save (M0=0,M1=1) : UART is off, LoRa radio is on WOR(wake on radio) mode
-#             which means the device will turn on when there is data to be received.
-#             Transmission is not allowed.
-#
-#   - 3=sleep (M0=1,M1=1) : UART is on, LoRa radio is off. Is used to
-#             get/set module parameters or to reset the module.
-#
-######################################################################
+# coding=utf-8
 
 import busio
 import board
@@ -143,7 +85,7 @@ class ebyteE32:
         """
         constructor for ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> import board
             >>> import ebyteE32
             >>> M0pin = board.D2
@@ -167,17 +109,6 @@ class ebyteE32:
             Address (int): LoRa address (default: 0x0000)
             Channel (int): LoRa channel (default: 0x06)
             debug (bool): debug mode (default: False)
-
-        Raises:
-            E (Error): if error on sendMessage
-            E (Error): if error on recvMessage
-            E (Error): if error on reset
-            E (Error): if error on stop UART
-            E (Error): if error on sendCommand
-            E (Error): if error on getVersion
-            E (Error): if error on getConfig
-            E (Error): if error on setConfig
-
         """
         # configuration in dictionary
         self.config = {'model': Model, 'port': Port, 'baudrate': Baudrate, 'parity': Parity, 'datarate': AirDataRate,
@@ -256,7 +187,7 @@ class ebyteE32:
         - fixed mode : only the module with this address and channel will receive the payload;
                        if the address is 0xFFFF all modules with the same channel will receive the payload
 
-        Example:
+        Examples:
             >>> sendMessage(0x0000, 0x06, {'temperature': 25.5, 'humidity': 60.0}, True)
             'OK'
 
@@ -322,7 +253,7 @@ class ebyteE32:
         - fixed mode : only payloads from transmitters with this address and channel will be received;
                        if the address is 0xFFFF, payloads from all transmitters with this channel will be received
 
-        Example:
+        Examples:
             >>> recvMessage(0x0000, 0x06, True)
             {'temperature': 25.5, 'humidity': 60.0}
 
@@ -350,7 +281,7 @@ class ebyteE32:
             # put into normal mode
             self.setOperationMode('normal')
             # receive message
-            js_payload = self.serdev.read()
+            js_payload = self.serdev.readline()
             # debug
             if self.debug:
                 print(js_payload)
@@ -386,7 +317,7 @@ class ebyteE32:
         Calculates checksum for sending/receiving payloads. Sums the ASCII character values mod256 and returns
         the lower byte of the two's complement of that value in hex notation.
 
-        Example:
+        Examples:
             >>> calcChecksum('{"temperature":25.5,"humidity":60.0}')
             '37'
 
@@ -402,7 +333,7 @@ class ebyteE32:
         """
         Reset the ebyte E32 Lora module
 
-        Example:
+        Examples:
             >>> reset()
             'OK'
 
@@ -427,7 +358,7 @@ class ebyteE32:
         """
         Stop the ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> stop()
             'OK'
 
@@ -453,7 +384,7 @@ class ebyteE32:
         Send a command to the ebyte E32 LoRa module.
         The module has to be in sleep mode
 
-        Example:
+        Examples:
             >>> sendCommand('reset')
             'OK'
 
@@ -503,7 +434,7 @@ class ebyteE32:
         """
         Get the version info from the ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> getVersion()
             ================= E32 MODULE ===================
             model       	433Mhz
@@ -543,7 +474,7 @@ class ebyteE32:
         """
         Get config parameters from the ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> getConfig()
             =================== CONFIG =====================
             model       	E32-868T20D
@@ -588,7 +519,7 @@ class ebyteE32:
         """
         decode the config message from the ebyte E32 LoRa module to update the config dictionary
 
-        Example:
+        Examples:
             >>> decodeConfig([0xC0, 0x00, 0x00, 0x00, 0x00, 0x00])
 
         Args:
@@ -620,7 +551,7 @@ class ebyteE32:
         """
         encode the config dictionary to create the config message of the ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> encodeConfig()
             [192, 0, 1, 26, 4, 68]
 
@@ -657,7 +588,7 @@ class ebyteE32:
         """
         Show the config parameters of the ebyte E32 LoRa module on the shell
 
-        Example:
+        Examples:
             >>> showConfig()
             =================== CONFIG =====================
             model       	E32-868T20D
@@ -699,7 +630,7 @@ class ebyteE32:
         """
         Wait for the E32 LoRa module to become idle (AUX pin high)
 
-        Example:
+        Examples:
             >>> waitForDeviceIdle()
 
         Returns:
@@ -707,7 +638,7 @@ class ebyteE32:
         """
         count = 0
         # loop for device busy
-        while not self.AUX.value():
+        while not self.AUX.value:
             # increment count
             count += 1
             # maximum wait time 100 ms
@@ -720,7 +651,7 @@ class ebyteE32:
         """
         Save config dictionary to JSON file
 
-        Example:
+        Examples:
             >>> saveConfigToJson()
 
         Returns:
@@ -733,7 +664,7 @@ class ebyteE32:
         """
         Load config dictionary from JSON file
 
-        Example:
+        Examples:
             >>> loadConfigFromJson()
             {'parity': '8N1', 'datarate': '2.4k', 'model': '868T20D', 'channel': 4, 'transmode': 0, 'port': 'U2', 'frequency': 866, 'baudrate': 9600, 'txpower': 0, 'iomode': 1, 'wutime': 0, 'address': 1, 'fec': 1}
 
@@ -748,7 +679,7 @@ class ebyteE32:
         """
         Calculate the frequency (= minimum frequency + channel * 1MHz)
 
-        Example:
+        Examples:
             >>> calcFrequency()
 
         Returns:
@@ -770,7 +701,7 @@ class ebyteE32:
         """
         Set the transmission mode of the E32 LoRa module
 
-        Example:
+        Examples:
             >>> setTransmissionMode(0)
 
         Args:
@@ -787,7 +718,7 @@ class ebyteE32:
         """
         Set config parameters for the ebyte E32 LoRa module
 
-        Example:
+        Examples:
             >>> setConfig('setConfigPwrDwnSave')
             'OK'
 
@@ -822,7 +753,7 @@ class ebyteE32:
         """
         Set operation mode of the E32 LoRa module
 
-       Example:
+       Examples:
             >>> setOperationMode('normal')
 
         Args:
