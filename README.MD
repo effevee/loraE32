@@ -161,7 +161,7 @@ GND|black|GND
 * Because both the ESP32 and the E32 LoRa module are 3.3V compliant, no voltage dividers are necessary for communication.
 * To stabilize the power supply for the E32 LoRa module, an electrolytic capacitor of 100 µF is placed on the power rail of the breadboard.
 
-## MicroPython code
+## MicroPython and CircuitPython code
 
 ### class
 ```
@@ -257,7 +257,7 @@ transparent|[code](examples/testSendE32_Transparent.py)|[code](examples/testRecv
 
 ## Proof of Concept
 
-To validate the proper working of the ebyteE32 micropython class this simple sensor measuring scenario has been implemented :
+To validate the proper working of the ebyteE32 micropython/circuitpython class this simple sensor measuring scenario has been implemented :
 1. __Sensor nodes__ 
     - each sensor node contains an ESP32 microcontroller, an Ebyte E32 LoRa module, a sensor and a 3.3V power supply with integrated 18650 Li-ion battery.
     - the node wakes up every 5 minutes, takes a sensor reading and transmits it with the E32 LoRa module. Then it goes to deepsleep to extend the battery life.
